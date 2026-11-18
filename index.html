@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Padel Super League – Auction Helper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f5f2;--card:#fff;--ink:#16211b;--mut:#6b766f;--line:#e3e6e1;--acc:#1f6f4a;--accS:#e6f2ec;--red:#c0392b;--redS:#fbeceb;--amb:#a86a00;--ambS:#fff4dc;--r:14px}
+*{box-sizing:border-box}html,body{margin:0}body{font:14px/1.45 Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+button,input,select,textarea{font:inherit;color:inherit}
+.top{background:var(--ink);color:#fff;padding:14px 18px 0}.top>*{max-width:1144px;margin-left:auto;margin-right:auto}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px}.brand small{font-weight:400;opacity:.6;font-size:12px}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px auto}
+.stat{background:rgba(255,255,255,.07);border-radius:10px;padding:10px 12px}.stat b{display:block;font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}.stat span{font-size:11.5px;opacity:.65}
+.tabs{display:flex;gap:4px}.tab{background:none;border:0;color:#fff;opacity:.6;padding:10px 14px;border-bottom:3px solid transparent;cursor:pointer;font-weight:600}.tab.on{opacity:1;border-color:#7fd3a4}
+.wrap{max-width:1180px;margin:0 auto;padding:18px}
+.view{display:none}.view.on{display:block}
+.grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:16px}
+@media(max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:16px}
+.card h3{margin:0 0 12px;font-size:13px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}
+input,select,textarea{border:1px solid var(--line);border-radius:9px;padding:9px 11px;background:#fff;min-width:0}
+input:focus,select:focus,textarea:focus{outline:2px solid #9fd6b8;border-color:var(--acc)}
+.btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 14px;cursor:pointer;font-weight:600}
+.btn:hover{background:#f6f7f5}.btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}.btn.pri:hover{background:#185c3d}
+.btn.dan{color:var(--red)}.btn:disabled{opacity:.4;cursor:not-allowed}.btn.sm{padding:6px 10px;font-size:13px}
+.search{width:100%;font-size:16px;padding:13px 14px}
+.empty{color:var(--mut);text-align:center;padding:28px 10px}
+.pname{font-size:24px;font-weight:800;margin:14px 0 4px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}.chip{font-size:12px;padding:3px 9px;border-radius:20px;background:#eef0ec;color:#3d4a42;font-weight:500}.chip.w{background:#fde8f1;color:#a2295e}.chip.rk{background:var(--accS);color:var(--acc)}
+.verdict{margin:16px 0;border-radius:12px;padding:16px}.verdict.go{background:var(--accS)}.verdict.stop{background:var(--redS)}.verdict.warn{background:var(--ambS)}.verdict.mute{background:#f1f2ef}
+.verdict .l{font-size:12px;color:var(--mut)}.verdict .v{font-size:30px;font-weight:800;line-height:1.15}.go .v{color:var(--acc)}.stop .v{color:var(--red)}.warn .v{color:var(--amb)}
+.why{font-size:12.5px;color:var(--mut);margin-top:6px}
+.price{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.price input{width:130px;font-size:18px;font-weight:700;text-align:center}
+.acts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px}
+.err{color:var(--red);font-size:12.5px;min-height:18px;margin-top:6px}
+.slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.slot{border:1px solid var(--line);border-radius:10px;padding:9px}.slot span{font-size:11.5px;color:var(--mut)}.slot b{display:block;font-size:18px}
+.slot.done{background:var(--accS);border-color:#bfe1cd}
+.list{margin-top:12px}.li{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-top:1px solid var(--line);font-size:13.5px}.li .m{color:var(--mut)}
+.alert{border-radius:9px;padding:9px 11px;margin-bottom:8px;font-size:13px;background:var(--ambS);color:#6b4500}.alert.ok{background:var(--accS);color:var(--acc)}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}.filters input{flex:1;min-width:160px}
+.tbl{overflow-x:auto}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line)}th{font-size:11.5px;color:var(--mut);font-weight:600;text-transform:uppercase}
+tr.click{cursor:pointer}tr.click:hover td{background:#f8f9f7}tr.gone td{color:#a8b0aa}tr.ours td{color:var(--acc);font-weight:600}
+.rank{width:58px;text-align:center;padding:6px}
+.form{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.form label{font-size:12px;color:var(--mut);display:flex;flex-direction:column;gap:4px}
+.note{font-size:12.5px;color:var(--mut)}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+#ai{white-space:pre-wrap;font-size:13.5px;margin-top:10px;line-height:1.55}
+</style></head><body>
+<div class="top">
+  <div class="brand">🎾 Padel Super League · Auction Helper <small id="sub"></small></div>
+  <div class="stats">
+    <div class="stat"><b id="kLeft">–</b><span>Coins left</span></div>
+    <div class="stat"><b id="kSlots">–</b><span>Players still needed</span></div>
+    <div class="stat"><b id="kMax">–</b><span>Highest bid we can afford</span></div>
+    <div class="stat"><b id="kAvg">–</b><span>Average per player still needed</span></div>
+  </div>
+  <div class="tabs"><button class="tab on" data-v="live">Live auction</button><button class="tab" data-v="players">Players &amp; ranks</button><button class="tab" data-v="setup">Rules &amp; setup</button></div>
+</div>
+
+<div class="wrap">
+<!-- LIVE -->
+<div class="view on" id="v-live"><div class="grid">
+  <div>
+    <div class="card">
+      <h3>Player on the block</h3>
+      <input id="blockSearch" class="search" list="dl" placeholder="Type the name being auctioned…" autocomplete="off"><datalist id="dl"></datalist>
+      <div id="block"></div>
+    </div>
+    <div class="card" id="aiPan">
+      <h3>Ask Claude</h3>
+      <div class="row"><input id="aiQ" style="flex:1" placeholder="e.g. Spend big on Advanced now, or save for Inter Plus?"><button class="btn pri" id="aiBtn">Ask</button></div>
+      <div id="ai" class="note">Claude gets the rules, our squad, coins left, your ranks and who is still available.</div>
+    </div>
+  </div>
+  <div>
+    <div class="card"><h3>Our squad</h3><div class="slots" id="slots"></div><div class="list" id="squad"></div></div>
+    <div class="card"><h3>Watch out</h3><div id="alerts"></div></div>
+    <div class="card"><h3>Recent results</h3><div id="log"></div><div class="row" style="margin-top:10px"><button class="btn sm" id="undo">↶ Undo last</button></div></div>
+  </div>
+</div></div>
+
+<!-- PLAYERS -->
+<div class="view" id="v-players"><div class="card">
+  <h3>Rank your targets before the auction (1 = must have)</h3>
+  <div class="filters">
+    <input id="q" placeholder="Search name">
+    <select id="fc"><option value="">All categories</option><option value="A">Advanced</option><option value="IP">Intermediate Plus</option><option value="I">Intermediate</option><option value="B">Beginner</option><option value="W">Women only</option></select>
+    <select id="fs"><option value="avail">Available</option><option value="">Everyone</option><option value="ranked">Ranked by me</option><option value="sold">Sold</option></select>
+  </div>
+  <div class="tbl"><table><thead><tr><th>Name</th><th>Category</th><th>My rank</th><th>Suggested max</th><th>Status</th></tr></thead><tbody id="tb"></tbody></table></div>
+</div></div>
+
+<!-- SETUP -->
+<div class="view" id="v-setup">
+  <div class="card"><h3>Our retained players</h3>
+    <div class="row"><select id="ret1" style="flex:1"></select><select id="ret2" style="flex:1"></select></div>
+    <div class="err" id="retErr"></div>
+    <p class="note">Rule: 1 Advanced + 1 from any other category. Other teams' retained players are already off the market.</p>
+  </div>
+  <div class="card"><h3>Auction rules</h3>
+    <div class="form" id="rulesForm"></div>
+    <p class="note">Filled from the Nov rulebook. If the organiser changes anything, edit it here and every number updates.</p>
+  </div>
+  <div class="card"><h3>Player list</h3>
+    <p class="note" id="poolInfo"></p>
+    <div class="row"><label class="btn">Upload new list PDF<input type="file" id="pdf" accept="application/pdf" hidden></label><span class="note">or paste below: one player per line, e.g. <code>Rohan Shah, Intermediate Plus</code>. Headings like <code>RETAINED PLAYERS</code> or <code>WOMEN CATEGORY</code> mark the lines under them.</span></div>
+    <textarea id="paste" rows="6" style="width:100%;margin-top:10px" placeholder="RETAINED PLAYERS&#10;Saish Shelar Advanced&#10;ADVANCED&#10;Mihir Akolkar Advanced&#10;WOMEN CATEGORY&#10;Ira Shah Intermediate"></textarea>
+    <div class="row" style="margin-top:8px"><button class="btn" id="parseBtn">Preview list</button><button class="btn pri" id="useBtn" disabled>Use this list</button><span class="note" id="parseInfo"></span></div>
+    <p class="note">Using a new list keeps your ranks for names that match, and starts the auction fresh.</p>
+  </div>
+  <div class="card"><h3>Backup</h3>
+    <div class="row"><button class="btn sm" id="exp">Copy backup</button><button class="btn sm" id="imp">Restore from backup</button><button class="btn sm dan" id="reset">Start over</button></div>
+    <textarea id="io" rows="3" style="width:100%;margin-top:10px" placeholder="Paste a backup here, then press Restore"></textarea>
+    <p class="note">Everything saves in this browser. Use one device during the auction.</p>
+  </div>
+</div>
+</div>
+
+<script>
+const CN={A:'Advanced',IP:'Intermediate Plus',I:'Intermediate',B:'Beginner'};
+const CATS=['A','IP','I','B'];
+/* default list: Player List_Categories_2026.pdf */
+const DEFAULT_TEXT=`RETAINED PLAYERS
+Saish shelar Advanced
+Omkar J Intermediate Plus
+Niraj Sankla Intermediate Plus
+Raunak Ghai Intermediate Plus
+Atharva Khisti Advanced
+Omar Sumar Advanced
+Namita Bal Intermediate Plus
+Arjun Gupta Intermediate Plus
+Vinayak S Advanced
+Naesar Jewoor Advanced
+Siddharth Nandal Advanced
+Tanish Singh Intermediate
+Aryan Sutar Advanced
+Rohan C Intermediate Plus
+Akash Wagh Advanced
+Kaivalya kalamse Advanced
+Arya Devdhar Intermediate Plus
+Armaan B Advanced
+Cherag Ramnathan Beginner
+Kush Shah Beginner
+ADVANCED
+${'Mihir Akolkar;Rakshit Prabhu;Yash Paranjpe;Tanish Belgalkar;Manav Sreekumar;Zian Talab;Tushal Thawani;Venkatesh Acharya;Peter P;Aleister Leytham;Manav Peshwani'.split(';').map(n=>n+' Advanced').join('\n')}
+INTERMEDIATE PLUS
+${'Arjun Patel;Aadil Pathan;Tejas Anand;Jitin Mothukuri;Nitya Shah;Aashish B;Sameer Saiyed;Adarsh Prabhu;Ishant Rege;Abhishek Parmar;Jay Jain;Suraj k;Chiraag Khemani;Rohan Sukhwani;Rahul Gupta;Aman Shaikh;Rishab Bajaj;Mayur Bundal;Ridhant Sangamnerkar;Joy;Jaideep P;Raunak Jhawar;Kunal Jain;Vivin Singh Rana'.split(';').map(n=>n+' Intermediate Plus').join('\n')}
+INTERMEDIATE
+${'Siddhant Khandelwal;Salman S;Veer M;Umang Khurana;Prabhkirat Singh Ghai;Vineet Sharma;Shivam Ganeriwala;Danish Pathan;Arjun Motadoo;Ojas;Raj Rajani;Krishna Amin;Anuj mehta;Sudhanshu;Anshul Karnawat;Siddhant Nahar;Aadi Bhandari;Suryabhan Shinde;Atul K;Karthik Shewale;Siddanth Bhat;Sandeep Malu;Siddh Shah;Naman kothari;Vivek Kanwar;Dhruv Sahrma;Yash Sultania;Aayush Chordia;Naveen Sarawagi;Rikhil;Arya Kulkarni (roko);Arjun Raju;Vivek Shrivastav;Jenil;Angad oberoi;Nikhil kotnis;Parth Mohite;Puneet Samant;Tanish B;Anuj Sabade;Krishna Bora;Sehul Maheshwari;Monish;Adhiraj Sandhu;Harshil Lalwani;Aman Sancheti;Rohan Bhuskute;Rian Mujgule'.split(';').map(n=>n+' Intermediate').join('\n')}
+BEGINNER
+${'Cherag Ramnathan;Harsh S;Vishal;Girish Shilamkar;Rushil Gupta;Rahul Sajwahni;Gunjan Rawal;Swayam Mehta;Prathammesh;Nandan Dongre;Ramit Desai;Parth Suryawanshi;Neel Bhagate;Mandar Punde;tushar;Prateet Saluja;Aaryan Goel;Akshay Bhosale;Saarang Phadnis;Tanuj Chordia;Pranav Niyati;Joel;Shaantanu Joshi;Rohan Devdhar;Siddhant Katariya;Yash Sarda;Kian Bobinmaker;Swapnil Bihani;Jay chandani;Pushkaraj Patil;Rishabh Kukreja;Aryan Singh;Arya Mankar;Krish Anand;Rahil;Armaan Singh Gandhi;Akshay Mahajan;Aum Parikh;Hunar;Manish Dhalwani;Gaurav Khandelwal;Jay Pawar;Nishil;Akshat Parmar;Shanay Khemani;Sachit Jain;Siddhant Khandelwal;Raoul Doubey;Nishit Kandi;Yash Baney'.split(';').map(n=>n+' Beginner').join('\n')}
+WOMEN CATEGORY
+Nain Pherwani Beginner
+Mudita Uppal Beginner
+Diya P Beginner
+Pratiksha B Beginner
+Ira shah Intermediate
+Rayna Solanki Beginner
+Ruma Gaikaiwari Intermediate
+Diya Iravane Beginner
+Reema Beginner
+Shaili Trivedi Intermediate
+Ella Dube Beginner
+Isha Beginner
+Tisha S Beginner
+Aditi P Beginner
+Hanieh Jafari Beginner
+Madhura Intermediate
+Niharika Beginner
+Ronak Hegde Beginner
+Nikita Mohite Beginner
+Sonam Beginner
+Gabri Intermediate Plus
+Rayika Intermediate`;
+const SEED_RANK={'Manav Peshwani':1,'Zian Talab':2,'Tushal Thawani':3,'Venkatesh Acharya':4,'Yash Paranjpe':5,'Tanish Belgalkar':6};
+const KNOWN_WOMEN=['Namita Bal'];
+
+/* ---------- parse any list (pasted text or PDF text) ---------- */
+const CAT_RE=[[/\b(intermediate\s*plus|inter\s*\+|inter\s*plus|int\s*\+)\s*$/i,'IP'],[/\b(advanced?|marquee)\s*$/i,'A'],[/\b(intermediate|inter)\s*$/i,'I'],[/\b(beginners?)\s*$/i,'B']];
+function parseList(text){
+  const out=[];let mode='';const seen={};
+  for(let raw of text.split(/\r?\n/)){let l=raw.replace(/\s+/g,' ').trim();if(!l)continue;
+    const up=l.toUpperCase();
+    if(/^RETAIN/.test(up)){mode='ret';continue}
+    if(/^WOMEN/.test(up)){mode='w';continue}
+    if(/^(ADVANCED?|INTERMEDIATE( PLUS)?|BEGINNERS?|MARQUEE)$/.test(up)){mode='';continue}
+    if(/^(SR\.? ?NO|NAME\b)/i.test(l))continue;
+    let cat=null;for(const[re,c]of CAT_RE){const m=l.match(re);if(m){cat=c;l=l.slice(0,m.index).trim();break}}
+    if(!cat)continue;
+    l=l.replace(/^\d+[\.\)]?\s+/,'').replace(/[,\-–|]+$/,'').trim();if(!l||/^\d+$/.test(l))continue;
+    let name=l,key=name.toLowerCase();
+    if(seen[key]){if(mode!=='ret'&&seen[key].ret&&seen[key].cat===cat)continue;name+=` (${CN[cat]})`}
+    const p={name,cat,w:mode==='w'||KNOWN_WOMEN.includes(name),ret:mode==='ret'};seen[key]=p;out.push(p)}
+  return out}
+function makePool(list,oldRanks){return list.map((x,id)=>({id,name:x.name,cat:x.cat,w:x.w,ret:x.ret,
+  rank:(oldRanks&&oldRanks[x.name])||SEED_RANK[x.name]||'',status:x.ret?'retained':'avail',price:0}))}
+
+/* ---------- rules (Padel Hub Super League rulebook, Nov) ---------- */
+const DEFAULT_RULES={budget:100000,teams:10,minBid:1000,step:100,A:2,IP:2,I:4,B:4,SUB:2,women:1};
+const RULE_LABELS={budget:'Coins per team',teams:'Number of teams',minBid:'Starting bid',step:'Bid step',A:'Marquee + Advanced',IP:'Intermediate Plus',I:'Intermediate',B:'Beginner',SUB:'Substitutes (any)',women:'Women needed (min)'};
+// how much each slot matters: Advanced plays the 2-point match and is scarce
+const W={A:3.2,IP:1.5,I:1.0,B:0.75,SUB:0.5};
+const RANK_MULT=r=>!r?0.85:Math.max(0.8,1.6-0.12*(r-1));
+
+let S;const KEY='padel-auction-v2';
+function fresh(){return{rules:{...DEFAULT_RULES},pool:makePool(parseList(DEFAULT_TEXT)),ret:['',''],log:[],sel:null,tab:'live'}}
+function load(){try{const j=localStorage.getItem(KEY);if(j){const s=JSON.parse(j);if(s.rules&&s.pool)return s}}catch(e){}return fresh()}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+S=load();
+
+const $=id=>document.getElementById(id);
+const R=()=>S.rules;
+const NEED=()=>({A:R().A,IP:R().IP,I:R().I,B:R().B,SUB:R().SUB});
+const fmt=n=>Math.round(n).toLocaleString('en-IN');
+const rStep=n=>Math.max(R().minBid,Math.floor(n/R().step)*R().step);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const ours=()=>S.pool.filter(p=>p.status==='ours');
+const womenOurs=()=>ours().filter(p=>p.w).length;
+const womanDone=()=>womenOurs()>=R().women;
+
+/* slot logic: category slots first, extra players go to substitutes; last Beginner slots held for women */
+function squadSlots(){const N=NEED(),f={A:[],IP:[],I:[],B:[],SUB:[]};const wHave=womenOurs();
+  ours().sort((a,b)=>(b.w-a.w)||(b.price||0)-(a.price||0)).forEach(p=>{let ok=f[p.cat].length<N[p.cat];
+    if(ok&&p.cat==='B'&&!p.w&&f.B.length>=N.B-Math.max(0,R().women-wHave))ok=false;
+    (ok?f[p.cat]:f.SUB).push(p)});return f}
+function needLeft(){const f=squadSlots(),N=NEED(),n={};for(const k in N)n[k]=Math.max(0,N[k]-f[k].length);return n}
+const spent=()=>ours().reduce((s,p)=>s+(p.price||0),0);
+const left=()=>R().budget-spent();
+const slotsLeft=()=>Object.values(needLeft()).reduce((a,b)=>a+b,0);
+function hardMax(){const s=slotsLeft();return s<=0?0:Math.max(0,left()-R().minBid*(s-1))}
+function slotFor(p){const n=needLeft();const wMissing=Math.max(0,R().women-womenOurs());
+  if(p.cat==='B'&&!p.w&&wMissing>0&&n.B<=wMissing)return n.SUB>0?'SUB':null;
+  if(n[p.cat]>0)return p.cat;if(n.SUB>0)return'SUB';return null}
+function demandOthers(c){const t=R().teams-1;const gone=S.pool.filter(p=>p.cat===c&&(p.status==='sold'||(p.status==='retained'))).length;return Math.max(0,NEED()[c]*t-gone)}
+function scarcity(c){const avail=S.pool.filter(p=>p.cat===c&&p.status==='avail').length;
+  const ratio=(demandOthers(c)+(needLeft()[c]||0))/Math.max(1,avail);return Math.min(1.35,Math.max(.85,.85+ratio*.5))}
+function cap(p){const slot=slotFor(p);if(!slot)return 0;const n=needLeft();let tot=0;for(const k in n)tot+=n[k]*W[k];
+  let v=left()*W[slot]/tot*RANK_MULT(p.rank);
+  if(p.w&&!womanDone()&&p.cat==='B')v*=1.25;
+  if(slot!=='SUB')v*=scarcity(p.cat);
+  v=Math.min(v,left()*.35);
+  return Math.min(rStep(v),hardMax())}
+const SLOTNAME={A:'Marquee / Advanced',IP:'Intermediate Plus',I:'Intermediate',B:'Beginner',SUB:'Substitute'};
+
+/* ---------- render ---------- */
+function render(){save();
+  $('sub').textContent=`${R().teams} teams · ${fmt(R().budget)} coins · ${Object.values(NEED()).reduce((a,b)=>a+b,0)} players each`;
+  $('kLeft').textContent=fmt(left());$('kSlots').textContent=slotsLeft();
+  $('kMax').textContent=fmt(hardMax());$('kAvg').textContent=slotsLeft()?fmt(left()/slotsLeft()):'–';
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.v===S.tab));
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+S.tab));
+  renderSetup();renderSquad();renderAlerts();renderBlock();renderTable();renderLog();
+  $('dl').innerHTML=S.pool.filter(p=>p.status==='avail').map(p=>`<option value="${esc(p.name)}">`).join('')}
+function renderSquad(){const f=squadSlots(),N=NEED();
+  $('slots').innerHTML=Object.keys(N).map(k=>`<div class="slot ${f[k].length>=N[k]?'done':''}"><span>${SLOTNAME[k]}</span><b>${f[k].length} / ${N[k]}</b></div>`).join('')+
+   `<div class="slot ${womanDone()?'done':''}"><span>Women (rule)</span><b>${womenOurs()} / ${R().women}</b></div>`;
+  $('squad').innerHTML=ours().length?ours().map(p=>`<div class="li"><span>${esc(p.name)}${p.w?' ♀':''} <span class="m">· ${CN[p.cat]}</span></span><b>${p.ret?'Retained':fmt(p.price)}</b></div>`).join(''):'<div class="note">No players yet. Pick your retained players in Rules &amp; setup.</div>'}
+function renderAlerts(){const a=[];const n=needLeft();
+  for(const c of CATS){if(!n[c])continue;const av=S.pool.filter(p=>p.cat===c&&p.status==='avail');const dem=demandOthers(c)+n[c];
+    if(av.length<=dem)a.push(`<b>${CN[c]}</b>: only ${av.length} left for about ${dem} open places across all teams. Don't wait for a cheaper one.`);
+    if(av.length&&!av.some(p=>p.rank)&&S.pool.some(p=>p.cat===c&&p.rank))a.push(`<b>${CN[c]}</b>: none of your ranked players are left. Take a decent one cheaply.`)}
+  if(!womanDone()){const w=S.pool.filter(p=>p.w&&p.status==='avail').length;const miss=R().women-womenOurs();
+    a.push(`We still need ${miss} woman player${miss>1?'s':''} (${w} available).`+(n.B<=miss?' <b>The last Beginner place is kept for her.</b>':''))}
+  if(slotsLeft()&&left()/slotsLeft()<=2*R().minBid)a.push('Coins are tight. From here, mostly buy at the starting bid.');
+  if(S.ret.filter(x=>x!=='').length<2)a.push('Pick your 2 retained players in Rules &amp; setup first.');
+  $('alerts').innerHTML=a.map(x=>`<div class="alert">${x}</div>`).join('')||'<div class="alert ok">All good.</div>'}
+function renderLog(){const L=S.log.slice(-6).reverse();
+  $('log').innerHTML=L.length?L.map(l=>{const p=S.pool[l.id];const what={ours:'Won by us',sold:'Sold to another team',unsold:'Unsold',avail:'Put back'}[l.now]||l.now;
+    return `<div class="li"><span>${esc(p.name)} <span class="m">· ${what}</span></span><b>${l.price?fmt(l.price):''}</b></div>`}).join(''):'<div class="note">Nothing yet.</div>'}
+function renderBlock(){const p=S.pool.find(x=>x.id===S.sel);const el=$('block');
+  if(!p){el.innerHTML='<div class="empty">Type a name above when the auctioneer calls it,<br>or tap a player in <b>Players &amp; ranks</b>.</div>';return}
+  const slot=slotFor(p),c=cap(p),hm=hardMax();let v,cls,why='';
+  if(p.status==='ours'){v='Already in our squad';cls='mute'}
+  else if(p.status!=='avail'){v=p.status==='retained'?'Retained by another team':'Already sold';cls='mute'}
+  else if(!slot){v="Don't bid";cls='stop';why=(p.cat==='B'&&!p.w&&!womanDone())?'Our remaining Beginner place must go to a woman (rule).':'Our squad is full.'}
+  else if(slot==='SUB'&&!p.rank){v=`Up to ${fmt(Math.min(c,2*R().minBid))}`;cls='warn';why=`Our ${CN[p.cat]} places are full, so only as a cheap substitute.`}
+  else{v=`Up to ${fmt(c)}`;cls='go';why=`Goes into our ${SLOTNAME[slot]} place. `+(slotsLeft()>1?` We can never go above ${fmt(hm)}, because ${fmt(R().minBid)} has to stay for each of the other ${slotsLeft()-1} players we still need.`:' This is the last place in our squad.')}
+  el.innerHTML=`<div class="pname">${esc(p.name)}</div><div class="chips"><span class="chip">${CN[p.cat]}</span>${p.w?'<span class="chip w">Woman</span>':''}${p.rank?`<span class="chip rk">My rank ${p.rank}</span>`:''}</div>
+   <div class="verdict ${cls}"><div class="l">${cls==='go'||cls==='warn'?'Bid':''}</div><div class="v">${v}</div>${why?`<div class="why">${why}</div>`:''}</div>
+   ${p.status==='avail'?`<div class="note" style="margin-bottom:6px">Final price</div>
+   <div class="price"><button class="btn sm" data-d="-${R().step*10}">−${fmt(R().step*10)}</button><button class="btn sm" data-d="-${R().step}">−${R().step}</button>
+   <input id="price" type="number" inputmode="numeric" step="${R().step}" min="${R().minBid}" value="${S.draft||R().minBid}">
+   <button class="btn sm" data-d="${R().step}">+${R().step}</button><button class="btn sm" data-d="${R().step*10}">+${fmt(R().step*10)}</button></div>
+   <div class="err" id="perr"></div>
+   <div class="acts"><button class="btn pri" id="won">✓ We bought</button><button class="btn" id="lost">Other team bought</button><button class="btn" id="unsold">Unsold</button></div>`
+   :`<button class="btn sm" id="back" style="margin-top:4px">Put back as available</button>`}`;
+  if(p.status!=='avail'){$('back').onclick=()=>result(p,'avail',0);return}
+  const pi=$('price');const check=()=>{const v=+pi.value;let e='';
+    if(!(v>=R().minBid))e=`Bids start at ${fmt(R().minBid)}.`;else if(v%R().step)e=`Bids go up in steps of ${R().step}.`;
+    $('perr').textContent=e;$('won').disabled=$('lost').disabled=!!e;
+    if(!e&&v>hm&&slot)$('perr').textContent=`Over our limit of ${fmt(hm)}: we couldn't complete the team. Tap "We bought" twice to override.`;
+    if(!e&&!slot)$('perr').textContent='Our squad has no place for this player.';
+    S.draft=v;return!e};
+  pi.oninput=check;el.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{pi.value=Math.max(R().minBid,(+pi.value||0)+ +b.dataset.d);check()});check();
+  $('won').onclick=()=>{if(!check())return;const v=+pi.value;if((v>hm||!slot)&&!$('won').dataset.ok){$('won').dataset.ok=1;$('won').textContent='Tap again to confirm';return}result(p,'ours',v)};
+  $('lost').onclick=()=>{if(check())result(p,'sold',+pi.value)};$('unsold').onclick=()=>result(p,'unsold',0)}
+function result(p,st,pr){S.log.push({id:p.id,prev:p.status,prevPrice:p.price,now:st,price:pr});p.status=st;p.price=st==='avail'?0:pr;S.draft=null;render()}
+function renderTable(){const q=$('q').value.toLowerCase(),fc=$('fc').value,fs=$('fs').value;
+  const st={avail:'Available',ours:'Ours',sold:'Sold',retained:'Retained',unsold:'Unsold'};
+  const rows=S.pool.filter(p=>(!q||p.name.toLowerCase().includes(q))&&(!fc||(fc==='W'?p.w:p.cat===fc))&&
+    (!fs||(fs==='avail'?p.status==='avail':fs==='ranked'?p.rank:fs==='sold'?(p.status==='sold'||p.status==='ours'):true)))
+    .sort((a,b)=>CATS.indexOf(a.cat)-CATS.indexOf(b.cat)||(a.rank||99)-(b.rank||99)||a.name.localeCompare(b.name));
+  $('tb').innerHTML=rows.map(p=>`<tr class="click ${p.status==='ours'?'ours':p.status!=='avail'?'gone':''}" data-id="${p.id}"><td>${esc(p.name)}${p.w?' ♀':''}</td><td>${CN[p.cat]}</td>
+   <td><input class="rank" data-r="${p.id}" type="number" min="1" value="${p.rank}"></td><td>${p.status==='avail'?fmt(cap(p)):''}</td><td>${st[p.status]}${p.price?' · '+fmt(p.price):''}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">No players match.</td></tr>'}
+function renderSetup(){const rets=S.pool.filter(p=>p.ret);
+  ['ret1','ret2'].forEach((id,i)=>{$(id).innerHTML=`<option value="">${i?'Retained player 2 (any other category)':'Retained player 1 (Advanced)'}</option>`+rets.map(p=>`<option value="${p.id}" ${S.ret[i]==p.id?'selected':''}>${esc(p.name)} · ${CN[p.cat]}</option>`).join('')});
+  const sel=S.ret.filter(x=>x!=='').map(i=>S.pool[+i]);let e='';
+  if(sel.length===2){const a=sel.filter(p=>p.cat==='A').length;if(a!==1)e='Rule check: retained players must be exactly 1 Advanced + 1 from another category.';if(sel[0].id===sel[1].id)e='Pick two different players.'}
+  $('retErr').textContent=e;
+  if(!$('rulesForm').dataset.built){$('rulesForm').innerHTML=Object.keys(RULE_LABELS).map(k=>`<label>${RULE_LABELS[k]}<input type="number" min="0" data-rule="${k}"></label>`).join('');$('rulesForm').dataset.built=1}
+  document.querySelectorAll('[data-rule]').forEach(i=>{if(document.activeElement!==i)i.value=R()[i.dataset.rule]});
+  const c={};S.pool.forEach(p=>c[p.cat]=(c[p.cat]||0)+1);
+  $('poolInfo').textContent=`Current list: ${S.pool.length} players (${CATS.map(k=>`${c[k]||0} ${CN[k]}`).join(', ')}; ${S.pool.filter(p=>p.w).length} women; ${S.pool.filter(p=>p.ret).length} retained).`}
+
+/* ---------- events ---------- */
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{S.tab=t.dataset.v;render()});
+$('tb').onclick=e=>{if(e.target.dataset.r!==undefined)return;const tr=e.target.closest('tr[data-id]');if(tr){S.sel=+tr.dataset.id;S.draft=null;S.tab='live';render();scrollTo({top:0})}};
+$('tb').onchange=e=>{const id=e.target.dataset.r;if(id!==undefined){const v=parseInt(e.target.value);S.pool[+id].rank=v>0?v:'';render()}};
+['q','fc','fs'].forEach(i=>$(i).oninput=renderTable);
+const pickName=v=>{const p=S.pool.find(x=>x.name.toLowerCase()===v.toLowerCase().trim());if(p){S.sel=p.id;S.draft=null;$('blockSearch').value='';render();return true}return false};
+$('blockSearch').onchange=e=>pickName(e.target.value);
+$('blockSearch').onkeydown=e=>{if(e.key==='Enter'){const v=e.target.value.toLowerCase().trim();if(!pickName(v)){const m=S.pool.filter(p=>p.status==='avail'&&p.name.toLowerCase().includes(v));if(m.length===1)pickName(m[0].name)}}};
+$('rulesForm').oninput=e=>{const k=e.target.dataset.rule;if(!k)return;const v=parseInt(e.target.value);if(v>=0){S.rules[k]=v;render()}};
+['ret1','ret2'].forEach((id,i)=>$(id).onchange=e=>{const old=S.ret[i];if(old!==''){const o=S.pool[+old];o.status='retained';o.price=0}
+  const v=e.target.value;if(v!==''&&S.ret[1-i]===v){S.ret[i]='';render();return}
+  S.ret[i]=v;if(v!==''){const p=S.pool[+v];p.status='ours';p.price=0}render()});
+$('undo').onclick=()=>{const l=S.log.pop();if(l){const p=S.pool[l.id];p.status=l.prev;p.price=l.prevPrice;render()}};
+$('exp').onclick=async()=>{$('io').value=JSON.stringify(S);try{await navigator.clipboard.writeText($('io').value);$('exp').textContent='Copied ✓'}catch(e){$('exp').textContent='Select the text below and copy'}};
+$('imp').onclick=()=>{try{const s=JSON.parse($('io').value);if(!s.rules||!s.pool)throw 0;S=s;render()}catch(e){$('io').value='That is not a valid backup.'}};
+$('reset').onclick=()=>{const b=$('reset');if(b.dataset.ok){S=fresh();render();b.dataset.ok='';b.textContent='Start over'}else{b.dataset.ok=1;b.textContent='Tap again: wipes everything'}};
+/* new list */
+let preview=null;
+function showPreview(list,src){preview=list;const c={};list.forEach(p=>c[p.cat]=(c[p.cat]||0)+1);
+  $('parseInfo').textContent=list.length?`${src}: found ${list.length} players – ${CATS.map(k=>`${c[k]||0} ${CN[k]}`).join(', ')}, ${list.filter(p=>p.w).length} women, ${list.filter(p=>p.ret).length} retained.`:`${src}: no players found. Each line needs a name followed by its category.`;
+  $('useBtn').disabled=!list.length}
+$('parseBtn').onclick=()=>showPreview(parseList($('paste').value),'Pasted list');
+$('useBtn').onclick=()=>{if(!preview)return;const old={};S.pool.forEach(p=>{if(p.rank)old[p.name]=p.rank});S.pool=makePool(preview,old);S.ret=['',''];S.log=[];S.sel=null;preview=null;$('useBtn').disabled=true;$('parseInfo').textContent='New list in use.';render()};
+$('pdf').onchange=async e=>{const f=e.target.files[0];if(!f)return;$('parseInfo').textContent='Reading PDF…';
+  try{if(!window.pdfjsLib)await new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';s.onload=ok;s.onerror=no;document.head.appendChild(s)});
+    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const doc=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;let text='';
+    for(let i=1;i<=doc.numPages;i++){const tc=await(await doc.getPage(i)).getTextContent();const rows={};
+      tc.items.forEach(it=>{const y=Math.round(it.transform[5]/3);(rows[y]=rows[y]||[]).push(it)});
+      Object.keys(rows).sort((a,b)=>b-a).forEach(y=>{text+=rows[y].sort((a,b)=>a.transform[4]-b.transform[4]).map(t=>t.str).join(' ')+'\n'})}
+    $('paste').value=text;showPreview(parseList(text),f.name)}
+  catch(err){$('parseInfo').textContent='Could not read that PDF. Copy the names from it and paste them in the box instead.'}
+  e.target.value=''};
+
+/* ---------- Ask Claude ---------- */
+function rulesText(){const r=R();return `Padel Hub Super League auction. ${r.teams} teams, ${fmt(r.budget)} coins each, bids start ${r.minBid}, steps of ${r.step}. Squad: Marquee+Advanced ${r.A}, Inter Plus ${r.IP}, Intermediate ${r.I}, Beginner ${r.B} (at least ${r.women} woman), Substitutes ${r.SUB} (any category) – includes 2 retained (1 Advanced + 1 other). Each tie = 6 matches: Marquee/Adv doubles (2 points), Inter+ doubles, Inter doubles, Open Inter (men/women), Beginner doubles, Mixed beginners (1 point each). One match per player per tie; every substitute must play at least once; a substitute must be similar rating or lower. Top 2 of each 5-team group reach semis (tie wins, then points, then head-to-head, then game difference).`}
+let sample=null;
+(async()=>{try{sample=await claude.use('sample')}catch(e){}if(!sample){$('aiBtn').disabled=true;$('ai').textContent='Ask Claude works when this page is opened on claude.ai. Everything else works here.'}})();
+$('aiBtn').onclick=async()=>{if(!sample)return;const q=$('aiQ').value.trim()||'What should our strategy be for the next few players?';const blk=S.pool.find(x=>x.id===S.sel);
+  const avail=CATS.map(c=>`${CN[c]}: `+S.pool.filter(p=>p.cat===c&&p.status==='avail').map(p=>p.name+(p.w?' (woman)':'')+(p.rank?` [our rank ${p.rank}]`:'')).join(', ')).join('\n');
+  const prices=S.pool.filter(p=>p.status==='sold'&&p.price).map(p=>`${p.name} (${CN[p.cat]}) ${p.price}`).join('; ')||'none yet';
+  const prompt=`You are advising one team owner live during a padel league player auction. Reply in short, plain English (max 8 lines), concrete numbers in coins. Never suggest anything that breaks the rules.\n\nRULES:\n${rulesText()}\n\nOUR STATE: coins left ${left()}, places still open ${JSON.stringify(needLeft())}, women ${womenOurs()}/${R().women}, highest bid we can afford ${hardMax()}.\nOur squad: ${ours().map(p=>`${p.name} (${CN[p.cat]}) ${p.price}`).join('; ')||'empty'}\nWhat other teams paid: ${prices}\nOn the block: ${blk?`${blk.name} (${CN[blk.cat]}${blk.w?', woman':''}), our tool suggests up to ${cap(blk)}`:'nobody'}\nStill available (ranks are our own preference, 1 = best; no other skill ratings exist):\n${avail}\n\nQUESTION: ${q}`;
+  $('ai').textContent='Thinking…';$('aiBtn').disabled=true;
+  try{await sample(prompt,{onText:({text})=>{$('ai').textContent=text},cache:false})}
+  catch(e){$('ai').textContent=e.code==='rate_limited'?'Too many questions – wait a minute.':e.code==='not_granted'?'Claude access was not allowed for this page.':'Could not reach Claude ('+(e.message||e.code)+').'}
+  $('aiBtn').disabled=false};
+render();
+</script>
+</body></html>
