@@ -119,59 +119,204 @@ tr.click{cursor:pointer}tr.click:hover td{background:#f8f9f7}tr.gone td{color:#a
 <script>
 const CN={A:'Advanced',IP:'Intermediate Plus',I:'Intermediate',B:'Beginner'};
 const CATS=['A','IP','I','B'];
-/* default list: Player List_Categories_2026.pdf */
+/* default list: Player List_With Categories (1).pdf, 18 Nov */
 const DEFAULT_TEXT=`RETAINED PLAYERS
-Saish shelar Advanced
-Omkar J Intermediate Plus
-Niraj Sankla Intermediate Plus
-Raunak Ghai Intermediate Plus
-Atharva Khisti Advanced
-Omar Sumar Advanced
-Namita Bal Intermediate Plus
-Arjun Gupta Intermediate Plus
-Vinayak S Advanced
-Naesar Jewoor Advanced
-Siddharth Nandal Advanced
-Tanish Singh Intermediate
-Aryan Sutar Advanced
-Rohan C Intermediate Plus
-Akash Wagh Advanced
-Kaivalya kalamse Advanced
-Arya Devdhar Intermediate Plus
-Armaan B Advanced
-Cherag Ramnathan Beginner
-Kush Shah Beginner
+Sr No Name Category
+1 Saish shelar Advanced
+2 Omkar J Intermediate Plus
+3 Niraj Sankla Intermediate Plus
+4 Rahul Gupta Intermediate Plus
+5 Atharva Khisti Advanced
+6 Omar Sumar Advanced
+7 Namita Bal Intermediate Plus
+8 Arjun Gupta Intermediate Plus
+9 Vinayak S Advanced
+10 Naesar Jewoor Advanced
+11 Siddharth Nandal Advanced
+12 Tanish Singh Intermediate
+13 Aryan Sutar Advanced
+14 Rohan C Intermediate Plus
+15 Akash Wagh Advanced
+16 Kaivalya kalamse Advanced
+17 Arya Devdhar Intermediate Plus
+18 Aryan Goveas Advanced
+19 Cherag Ramnathan Beginner
+20 Kush Shah Beginner
 ADVANCED
-${'Mihir Akolkar;Rakshit Prabhu;Yash Paranjpe;Tanish Belgalkar;Manav Sreekumar;Zian Talab;Tushal Thawani;Venkatesh Acharya;Peter P;Aleister Leytham;Manav Peshwani'.split(';').map(n=>n+' Advanced').join('\n')}
+Sr No Name Category
+1
+1 Mihir Akolkar Advanced
+2 Tanish Belgalkar Advanced
+3 Manav Sreekumar Advanced
+4 Zian Talab Advanced
+5 Tushal Thawani Advanced
+6 Venkatesh Acharya Advanced
+7 Peter P Advanced
+8 Aleister Leytham Advanced
+9 Manav Peshwani Advanced
+10 Raunak Singh Sohal Advanced
+11 Adi Patel Advanced
 INTERMEDIATE PLUS
-${'Arjun Patel;Aadil Pathan;Tejas Anand;Jitin Mothukuri;Nitya Shah;Aashish B;Sameer Saiyed;Adarsh Prabhu;Ishant Rege;Abhishek Parmar;Jay Jain;Suraj k;Chiraag Khemani;Rohan Sukhwani;Rahul Gupta;Aman Shaikh;Rishab Bajaj;Mayur Bundal;Ridhant Sangamnerkar;Joy;Jaideep P;Raunak Jhawar;Kunal Jain;Vivin Singh Rana'.split(';').map(n=>n+' Intermediate Plus').join('\n')}
+Sr No Name Category
+1 Arjun Patel Intermediate Plus
+2 Aadil Pathan Intermediate Plus
+3 Tejas Anand Intermediate Plus
+4 Jitin Mothukuri Intermediate Plus
+5 Nitya Shah Intermediate Plus
+6 Aashish B Intermediate Plus
+7 Sameer Saiyed Intermediate Plus
+8 Adarsh Prabhu Intermediate Plus
+9 Ishant Rege Intermediate Plus
+10 Abhishek Parmar Intermediate Plus
+11 Jay Jain Intermediate Plus
+12 Suraj k Intermediate Plus
+13 Chiraag Khemani Intermediate Plus
+14 Rohan Sukhwani Intermediate Plus
+15 Monish Chug Intermediate Plus
+16 Aman Shaikh Intermediate Plus
+17 Rishab Bajaj Intermediate Plus
+18 Mayur Bundal Intermediate Plus
+19 Ridhant Sangamnerkar Intermediate Plus
+20 Joy Intermediate Plus
+21 Jaideep P Intermediate Plus
+2
+22 Raunak Jhawar Intermediate Plus
+23 Kunal Jain Intermediate Plus
+24 Vivin  Singh Rana Intermediate Plus
+25 Rakshit Prabhu Intermediate Plus
+26 Yash Paranjpe Intermediate Plus
+27 Armaan B Intermediate Plus
 INTERMEDIATE
-${'Siddhant Khandelwal;Salman S;Veer M;Umang Khurana;Prabhkirat Singh Ghai;Vineet Sharma;Shivam Ganeriwala;Danish Pathan;Arjun Motadoo;Ojas;Raj Rajani;Krishna Amin;Anuj mehta;Sudhanshu;Anshul Karnawat;Siddhant Nahar;Aadi Bhandari;Suryabhan Shinde;Atul K;Karthik Shewale;Siddanth Bhat;Sandeep Malu;Siddh Shah;Naman kothari;Vivek Kanwar;Dhruv Sahrma;Yash Sultania;Aayush Chordia;Naveen Sarawagi;Rikhil;Arya Kulkarni (roko);Arjun Raju;Vivek Shrivastav;Jenil;Angad oberoi;Nikhil kotnis;Parth Mohite;Puneet Samant;Tanish B;Anuj Sabade;Krishna Bora;Sehul Maheshwari;Monish;Adhiraj Sandhu;Harshil Lalwani;Aman Sancheti;Rohan Bhuskute;Rian Mujgule'.split(';').map(n=>n+' Intermediate').join('\n')}
+Sr No Name Category
+1 Siddhant Khandelwal Intermediate
+2 Salman S Intermediate
+3 Veer M Intermediate
+4 Umang Khurana Intermediate
+5 Prabhkirat Singh Ghai Intermediate
+6 Vineet Sharma Intermediate
+7 Shivam Ganeriwala Intermediate
+8 Danish Pathan Intermediate
+9 Arjun Motadoo Intermediate
+10 Ojas Intermediate
+11 Raj Rajani Intermediate
+12 Krishna Amin Intermediate
+13 Anuj mehta Intermediate
+14 Sudhanshu Intermediate
+15 Anshul Karnawat Intermediate
+16 Siddhant Nahar Intermediate
+17 Aadi Bhandari Intermediate
+18 Suryabhan Shinde Intermediate
+19 Atul K Intermediate
+20 Karthik Shewale Intermediate
+21 Siddanth Bhat Intermediate
+22 Sandeep Malu Intermediate
+23 Siddh Shah Intermediate
+24 Naman kothari Intermediate
+25 Vivek Kanwar Intermediate
+26 Dhruv Sahrma Intermediate
+27 Yash Sultania Intermediate
+3
+28 Aayush Chordia Intermediate
+29 Naveen Sarawagi Intermediate
+30 Rikhil Intermediate
+31 Arya Kulkarni ( roko) Intermediate
+32 Arjun Raju Intermediate
+33 Vivek Shrivastav Intermediate
+34 Angad oberoi Intermediate
+35 Nikhil kotnis Intermediate
+36 Parth Mohite Intermediate
+37 Puneet Samant Intermediate
+38 Tanish B Intermediate
+39 Anuj Sabade Intermediate
+40 Krishna Bora Intermediate
+41 Sehul Maheshwari Intermediate
+42 Monish Intermediate
+43 Adhiraj Sandhu Intermediate
+44 Harshil Lalwani Intermediate
+45 Aman Sancheti Intermediate
+46 Rohan Bhuskute Intermediate
+47 Rian Mujgule Intermediate
+48 Khistij Kotwal Intermediate
 BEGINNER
-${'Cherag Ramnathan;Harsh S;Vishal;Girish Shilamkar;Rushil Gupta;Rahul Sajwahni;Gunjan Rawal;Swayam Mehta;Prathammesh;Nandan Dongre;Ramit Desai;Parth Suryawanshi;Neel Bhagate;Mandar Punde;tushar;Prateet Saluja;Aaryan Goel;Akshay Bhosale;Saarang Phadnis;Tanuj Chordia;Pranav Niyati;Joel;Shaantanu Joshi;Rohan Devdhar;Siddhant Katariya;Yash Sarda;Kian Bobinmaker;Swapnil Bihani;Jay chandani;Pushkaraj Patil;Rishabh Kukreja;Aryan Singh;Arya Mankar;Krish Anand;Rahil;Armaan Singh Gandhi;Akshay Mahajan;Aum Parikh;Hunar;Manish Dhalwani;Gaurav Khandelwal;Jay Pawar;Nishil;Akshat Parmar;Shanay Khemani;Sachit Jain;Siddhant Khandelwal;Raoul Doubey;Nishit Kandi;Yash Baney'.split(';').map(n=>n+' Beginner').join('\n')}
+Sr No Name Category
+1 Cherag Ramnathan Beginner
+2 Harsh S Beginner
+3 Vishal Beginner
+4 Girish Shilamkar Beginner
+5 Rushil Gupta Beginner
+6 Rahul Sajwahni Beginner
+7 Gunjan Rawal Beginner
+8 Swayam Mehta Beginner
+9 Prathammesh Beginner
+10 Nandan Dongre Beginner
+11 Ramit Desai Beginner
+4
+12 Parth Suryawanshi Beginner
+13 Neel Bhagate Beginner
+14 Mandar Punde Beginner
+15 Tushar Beginner
+16 Prateet Saluja Beginner
+17 Aaryan Goel Beginner
+18 Akshay Bhosale Beginner
+19 Saarang Phadnis Beginner
+20 Tanuj Chordia Beginner
+21 Pranav Niyati Beginner
+22 Joel Beginner
+23 Shaantanu Joshi Beginner
+24 Rohan Devdhar Beginner
+25 Siddhant Katariya Beginner
+26 Yash Sarda Beginner
+27 Kian Bobinmaker Beginner
+28 Swapnil Bihani Beginner
+29 Jay chandani Beginner
+30 Pushkaraj Patil Beginner
+31 Rishabh Kukreja Beginner
+32 Aryan Singh Beginner
+33 Arya Mankar Beginner
+34 Krish Anand Beginner
+35 Rahil Beginner
+36 Armaan Singh Gandhi Beginner
+37 Akshay Mahajan Beginner
+38 Aum Parikh Beginner
+39 Hunar Beginner
+40 Manish Dhalwani Beginner
+41 Gaurav Khandelwal Beginner
+42 Jay Pawar Beginner
+43 Nishil Beginner
+44 Akshat Parmar Beginner
+45 Shanay Khemani Beginner
+5
+46 Sachit Jain Beginner
+47 Siddhant Khandelwal Beginner
+48 Raoul Doubey Beginner
+49 Nishit Kandi Beginner
+50 Yash Baney Beginner
+51 Jenil Beginner
 WOMEN CATEGORY
-Nain Pherwani Beginner
-Mudita Uppal Beginner
-Diya P Beginner
-Pratiksha B Beginner
-Ira shah Intermediate
-Rayna Solanki Beginner
-Ruma Gaikaiwari Intermediate
-Diya Iravane Beginner
-Reema Beginner
-Shaili Trivedi Intermediate
-Ella Dube Beginner
-Isha Beginner
-Tisha S Beginner
-Aditi P Beginner
-Hanieh Jafari Beginner
-Madhura Intermediate
-Niharika Beginner
-Ronak Hegde Beginner
-Nikita Mohite Beginner
-Sonam Beginner
-Gabri Intermediate Plus
-Rayika Intermediate`;
+Sr No Name Category
+1 Nain Pherwani Beginner
+2 Mudita Uppal Beginner
+3 Diya P Beginner
+4 Pratiksha B Beginner
+5 Ira shah Intermediate
+6 Rayna Solanki Beginner
+7 Ruma Gaikaiwari Intermediate
+8 Diya Iravane Beginner
+9 Reema Beginner
+10 Shaili Trivedi Intermediate
+11 Ella Dube Beginner
+12 Isha Beginner
+13 Tisha S Beginner
+14 Aditi P Beginner
+15 Hanieh Jafari Beginner
+16 Madhura Intermediate
+17 Niharika Beginner
+18 Ronak Hegde Beginner
+19 Nikita Mohite Beginner
+20 Sonam Beginner
+21 Gabri Intermediate Plus
+22 Rayika Intermediate
+6`;
 const SEED_RANK={'Manav Peshwani':1,'Zian Talab':2,'Tushal Thawani':3,'Venkatesh Acharya':4,'Yash Paranjpe':5,'Tanish Belgalkar':6};
 const KNOWN_WOMEN=['Namita Bal'];
 
@@ -202,7 +347,7 @@ const RULE_LABELS={budget:'Coins per team',teams:'Number of teams',minBid:'Start
 const W={A:3.2,IP:1.5,I:1.0,B:0.75,SUB:0.5};
 const RANK_MULT=r=>!r?0.85:Math.max(0.8,1.6-0.12*(r-1));
 
-let S;const KEY='padel-auction-v2';
+let S;const KEY='padel-auction-v3';
 function fresh(){return{rules:{...DEFAULT_RULES},pool:makePool(parseList(DEFAULT_TEXT)),ret:['',''],log:[],sel:null,tab:'live'}}
 function load(){try{const j=localStorage.getItem(KEY);if(j){const s=JSON.parse(j);if(s.rules&&s.pool)return s}}catch(e){}return fresh()}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
