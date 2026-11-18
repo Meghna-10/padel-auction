@@ -11,6 +11,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px}.brand small{font-weight:400;opacity:.6;font-size:12px}
 .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px auto}
 .stat{background:rgba(255,255,255,.07);border-radius:10px;padding:10px 12px}.stat b{display:block;font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}.stat span{font-size:11.5px;opacity:.65}
+.syncpill{margin-left:auto;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,.1);opacity:.85}.syncpill.on{background:#2f7a52;opacity:1}.syncpill.err{background:#8a3b2b;opacity:1}
 .tabs{display:flex;gap:4px}.tab{background:none;border:0;color:#fff;opacity:.6;padding:10px 14px;border-bottom:3px solid transparent;cursor:pointer;font-weight:600}.tab.on{opacity:1;border-color:#7fd3a4}
 .wrap{max-width:1180px;margin:0 auto;padding:18px}
 .view{display:none}.view.on{display:block}
@@ -47,7 +48,7 @@ tr.click{cursor:pointer}tr.click:hover td{background:#f8f9f7}tr.gone td{color:#a
 #ai{white-space:pre-wrap;font-size:13.5px;margin-top:10px;line-height:1.55}
 </style></head><body>
 <div class="top">
-  <div class="brand">🎾 Padel Super League · Auction Helper <small id="sub"></small></div>
+  <div class="brand">🎾 Padel Super League · Auction Helper <small id="sub"></small><span id="sync" class="syncpill">Saved on this device only</span></div>
   <div class="stats">
     <div class="stat"><b id="kLeft">–</b><span>Coins left</span></div>
     <div class="stat"><b id="kSlots">–</b><span>Players still needed</span></div>
@@ -328,7 +329,9 @@ const TEAMS=[['Goodwill Gladiators','Naesar Jewoor','Rahul Gupta'],['RB Titans',
  ['Goldfieldd Strikers','Kaivalya kalamse','Rohan C'],['Serve Society All Stars','Saish shelar','Arjun Gupta'],['Khelomore Tigers','Akash Wagh','Niraj Sankla'],
  ['Skeiron Strikers','Aryan Goveas','Cherag Ramnathan']];
 const DEFAULT_TEAM='Tovio Smashio';
-const SEED_RANK={'Manav Peshwani':1,'Zian Talab':2,'Tushal Thawani':3,'Venkatesh Acharya':4,'Yash Paranjpe':5,'Tanish Belgalkar':6};
+/* our preferred players (team note, 18 Nov); older picks kept after them */
+const SEED_RANK={};
+const SEED_NOTE={};
 const KNOWN_WOMEN=['Namita Bal'];
 
 /* ---------- parse any list (pasted text or PDF text) ---------- */
@@ -349,7 +352,7 @@ function parseList(text){
     const p={name,cat,w:mode==='w'||KNOWN_WOMEN.includes(name),ret:mode==='ret'};seen[key]=p;out.push(p)}
   return out}
 function makePool(list,oldRanks){return list.map((x,id)=>({id,name:x.name,cat:x.cat,w:x.w,ret:x.ret,
-  rank:(oldRanks&&oldRanks[x.name])||SEED_RANK[x.name]||'',status:x.ret?'retained':'avail',price:0}))}
+  rank:(oldRanks&&oldRanks[x.name])||SEED_RANK[x.name]||'',note:SEED_NOTE[x.name]||'',status:x.ret?'retained':'avail',price:0}))}
 
 /* ---------- rules (Padel Hub Super League rulebook, Nov) ---------- */
 const DEFAULT_RULES={budget:100000,teams:10,minBid:1000,step:100,A:2,IP:2,I:4,B:4,SUB:2,women:1};
@@ -358,7 +361,7 @@ const RULE_LABELS={budget:'Coins per team',teams:'Number of teams',minBid:'Start
 const W={A:3.2,IP:1.5,I:1.0,B:0.75,SUB:0.5};
 const RANK_MULT=r=>!r?0.85:Math.max(0.8,1.6-0.12*(r-1));
 
-let S;const KEY='padel-auction-v4';
+let S;const KEY='padel-auction-v5';
 function tagTeams(pool){for(const[t,...ns]of TEAMS)for(const n of ns){const p=pool.find(x=>x.ret&&x.name.toLowerCase()===n.toLowerCase());if(p)p.team=t}}
 function setOurTeam(st,t){st.ourTeam=t;st.pool.forEach(p=>{if(p.ret){p.status='retained';p.price=0}});
   const mine=st.pool.filter(p=>p.ret&&t&&p.team===t).sort((a,b)=>(b.cat==='A')-(a.cat==='A'));
@@ -369,7 +372,64 @@ function rivals(){return TEAMS.map(t=>t[0]).filter(t=>t!==S.ourTeam).map(t=>{con
   const spentT=ps.reduce((a,p)=>a+(p.status==='sold'?p.price||0:0),0),need=Math.max(0,Object.values(NEED()).reduce((a,b)=>a+b,0)-ps.length),l=R().budget-spentT;
   return{t,left:l,have:ps.length,need,max:need?Math.max(0,l-R().minBid*(need-1)):0}})}
 function load(){try{const j=localStorage.getItem(KEY);if(j){const s=JSON.parse(j);if(s.rules&&s.pool)return s}}catch(e){}return fresh()}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}pushShared()}
+/* ---------- shared storage: one auction for every device (claude.ai link only) ---------- */
+const UI_ONLY=['tab','sel','draft','lastBuyer'];
+const CLIENT=Math.random().toString(36).slice(2);
+let DB=null,sharedAt=0,applying=false,pushT=null,lastPushed='';
+const sharedJson=()=>JSON.stringify(Object.fromEntries(Object.entries(S).filter(([k])=>!UI_ONLY.includes(k))));
+const SYNC_OK=()=>GS?'Saved to Google Sheet ✓'+(window.ME?' · '+window.ME:''):FB?'Saved to Firestore ✓ · '+(window.ME||''):'Live: shared with all devices ✓';
+function setSync(t,c){const e=document.getElementById('sync');if(e){e.textContent=t;e.className='syncpill'+(c?' '+c:'')}}
+function pushShared(){if(!DB||applying)return;const j=sharedJson();if(j===lastPushed)return;clearTimeout(pushT);
+  pushT=setTimeout(async()=>{try{const at=Date.now();await DB.doc('auction/state').set({json:j,at,by:CLIENT});lastPushed=j;sharedAt=at;setSync(SYNC_OK(),'on')}
+    catch(e){if(FB&&e&&e.code==='permission-denied'){setSync(`${window.ME} has no access – tap to switch account`,'err');return}setSync(GS?'Not saved: '+(/access|permission|denied/i.test(String(e&&e.message||e))?'you have no edit access to the sheet':'save failed – check internet'):'Not shared: '+(e.code==='not_granted'||e.code==='not_writer'?'view-only access':'save failed'),'err')}},400)}
+function applyShared(d){if(!d||!d.json||d.by===CLIENT||d.at<=sharedAt)return;try{const n=JSON.parse(d.json);if(!n.rules||!n.pool)return;
+  const ui={};UI_ONLY.forEach(k=>ui[k]=S[k]);S=Object.assign(n,ui);sharedAt=d.at;lastPushed=d.json;applying=true;render();applying=false;setSync(SYNC_OK(),'on')}catch(e){}}
+function viewsData(){const st={avail:'Available',ours:'Ours',sold:'Sold',retained:'Retained',unsold:'Unsold'};
+  const tm=t=>new Date(t).toLocaleString('en-IN',{timeZone:'Asia/Kolkata'});
+  return{
+   Results:[['Time (IST)','Player','Category','Result','Price','Team']].concat(S.log.filter(l=>l.t).map(l=>{const p=S.pool[l.id];return[tm(l.t),p.name,CN[p.cat],{ours:'We bought',sold:'Other team bought',unsold:'Unsold',avail:'Put back'}[l.now]||l.now,l.price||'',l.buyer||'']})),
+   'Our Squad':[['Player','Category','Woman','Price','How']].concat(ours().map(p=>[p.name,CN[p.cat],p.w?'Yes':'',p.ret?0:p.price,p.ret?'Retained':'Auction']),[['TOTAL SPENT','','',spent(),''],['COINS LEFT','','',left(),'']]),
+   Rivals:[['Team','Players','Coins left','Highest bid possible']].concat(rivals().map(r=>[r.t,r.have,r.left,r.max])),
+   Players:[['Name','Category','Woman','Retained','Team','My rank','Note','Status','Price']].concat(S.pool.map(p=>[p.name,CN[p.cat],p.w?'Yes':'',p.ret?'Yes':'',p.team||'',p.rank||'',p.note||'',st[p.status],p.price||'']))}}
+/* inside Google Apps Script the page talks to the Sheet through google.script.run */
+const GS=!!(window.google&&google.script&&google.script.run);
+const gsCall=(fn,...a)=>new Promise((ok,no)=>google.script.run.withSuccessHandler(ok).withFailureHandler(no)[fn](...a));
+const gsAdapter={doc:()=>({get:()=>gsCall('loadState'),set:d=>gsCall('saveState',d,viewsData()),
+  onSnapshot(cb,err){setInterval(()=>gsCall('loadState').then(cb,err),2500)}})};
+/* ---------- Firestore (GitHub Pages / file): Google login, only allowed emails (see firestore.rules) ---------- */
+// Paste the web app config from Firebase console → Project settings → Your apps. Leave null to switch Firestore off.
+const FIREBASE_CONFIG={apiKey:"AIzaSyBsqwuupe8wJ03OdZ5Kl4daF74LNNBXMjA",authDomain:"phsl-auction.firebaseapp.com",projectId:"phsl-auction",storageBucket:"phsl-auction.firebasestorage.app",messagingSenderId:"337924058244",appId:"1:337924058244:web:aac7aea48170c96aa366d1"};
+const FB_VER='10.12.2';
+const loadJs=src=>new Promise((ok,no)=>{const e=document.createElement('script');e.src=src;e.onload=ok;e.onerror=no;document.head.appendChild(e)});
+let FB=null;
+function fsAdapter(){const fs=firebase.firestore(),ref=fs.doc('auction/state'),vref=fs.doc('auction/views');
+  const asMaps=rows=>rows.slice(1).map(r=>Object.fromEntries(rows[0].map((h,i)=>[h,r[i]===undefined?'':r[i]])));
+  return{doc:()=>({get:()=>ref.get().then(x=>x.exists?x.data():null),
+    set:async d=>{const v=viewsData();await ref.set({...d,email:window.ME||''});
+      await vref.set({updatedAt:new Date(d.at).toISOString(),updatedBy:window.ME||'',results:asMaps(v.Results),ourSquad:asMaps(v['Our Squad']),rivals:asMaps(v.Rivals),players:asMaps(v.Players)})},
+    onSnapshot(cb,err){const u=ref.onSnapshot(x=>cb(x.exists?x.data():null),e=>{if(window.ME)err(e)});window.__unsub=typeof u==='function'?u:null}})}}
+async function startFirestore(){
+  try{await loadJs(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-app-compat.js`);
+    await Promise.all(['auth','firestore'].map(m=>loadJs(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-${m}-compat.js`)))}
+  catch(e){setSync('Could not load Firebase – check internet','err');return}
+  FB=firebase.initializeApp(FIREBASE_CONFIG);
+  const pill=document.getElementById('sync');
+  pill.style.cursor='pointer';
+  pill.onclick=()=>{if(firebase.auth().currentUser){firebase.auth().signOut()}else{firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>setSync('Sign-in failed: '+(e.code||e.message),'err'))}};
+  firebase.auth().onAuthStateChanged(u=>{if(window.__unsub){window.__unsub();window.__unsub=null}if(!u){DB=null;window.ME='';setSync('Sign in with Google to save ▸','err');return}
+    window.ME=u.email;DB=fsAdapter();sharedAt=0;connect()})}
+async function connect(){if(!DB)return;
+  setSync('Connecting…');const ref=DB.doc('auction/state');const unpack=x=>x&&typeof x.data==='function'?x.data():x;
+  const timer=setTimeout(()=>setSync('Shared save not reachable – saving on this device','err'),10000);
+  try{const first=unpack(await ref.get());clearTimeout(timer);
+    if(first&&first.json)applyShared(first);else{lastPushed='';pushShared()}
+    setSync(SYNC_OK(),'on');
+    ref.onSnapshot(x=>applyShared(unpack(x)),e=>setSync(e&&e.code==='permission-denied'?`${window.ME} has no access – tap to switch account`:'Live updates paused – reload page','err'))}
+  catch(e){clearTimeout(timer);setSync(e&&e.code==='permission-denied'?`${window.ME} has no access – tap to switch account`:e&&e.code==='not_granted'?'Sign in to share across devices':'Shared save not reachable – saving on this device','err')}}
+(async()=>{if(GS){DB=gsAdapter;gsCall('whoAmI').then(e=>{window.ME=e},()=>{});return connect()}
+  if(FIREBASE_CONFIG&&!/claude\.ai|claudeusercontent/.test(location.hostname))return startFirestore();
+  try{DB=await claude.use('db')}catch(e){DB=null}connect()})();
 S=load();
 
 const $=id=>document.getElementById(id);
@@ -442,7 +502,7 @@ function renderBlock(){const p=S.pool.find(x=>x.id===S.sel);const el=$('block');
   else if(slot==='SUB'&&!p.rank){v=`Up to ${fmt(Math.min(c,2*R().minBid))}`;cls='warn';why=`Our ${CN[p.cat]} places are full, so only as a cheap substitute.`}
   else{v=`Up to ${fmt(c)}`;cls='go';why=`Goes into our ${SLOTNAME[slot]} place. `+(slotsLeft()>1?` We can never go above ${fmt(hm)}, because ${fmt(R().minBid)} has to stay for each of the other ${slotsLeft()-1} players we still need.`:' This is the last place in our squad.')}
   if(p.status==='avail'&&slot&&cls==='go'){const top=rivals().filter(r=>r.max>c).length;why+=` ${top} rival team${top===1?' has':'s have'} enough coins to go higher.`}
-  el.innerHTML=`<div class="pname">${esc(p.name)}</div><div class="chips"><span class="chip">${CN[p.cat]}</span>${p.w?'<span class="chip w">Woman</span>':''}${p.rank?`<span class="chip rk">My rank ${p.rank}</span>`:''}</div>
+  el.innerHTML=`<div class="pname">${esc(p.name)}</div><div class="chips"><span class="chip">${CN[p.cat]}</span>${p.w?'<span class="chip w">Woman</span>':''}${p.rank?`<span class="chip rk">My rank ${p.rank}</span>`:''}</div><input id="noteIn" style="width:100%;margin-top:10px" placeholder="📝 Add a note for this player (saved for the whole team)" value="${esc(p.note||'')}">
    <div class="verdict ${cls}"><div class="l">${cls==='go'||cls==='warn'?'Bid':''}</div><div class="v">${v}</div>${why?`<div class="why">${why}</div>`:''}</div>
    ${p.status==='avail'?`<div class="note" style="margin-bottom:6px">Final price</div>
    <div class="price"><button class="btn sm" data-d="-${R().step*10}">−${fmt(R().step*10)}</button><button class="btn sm" data-d="-${R().step}">−${R().step}</button>
@@ -452,6 +512,7 @@ function renderBlock(){const p=S.pool.find(x=>x.id===S.sel);const el=$('block');
    <div class="err" id="perr"></div>
    <div class="acts"><button class="btn pri" id="won">✓ We bought</button><button class="btn" id="lost">Other team bought</button><button class="btn" id="unsold">Unsold</button></div>`
    :`<button class="btn sm" id="back" style="margin-top:4px">Put back as available</button>`}`;
+  $('noteIn').onchange=e=>{p.note=e.target.value.trim();render()};
   if(p.status!=='avail'){$('back').onclick=()=>result(p,'avail',0);return}
   const pi=$('price');const check=()=>{const v=+pi.value;let e='';
     if(!(v>=R().minBid))e=`Bids start at ${fmt(R().minBid)}.`;else if(v%R().step)e=`Bids go up in steps of ${R().step}.`;
@@ -462,13 +523,13 @@ function renderBlock(){const p=S.pool.find(x=>x.id===S.sel);const el=$('block');
   pi.oninput=check;el.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{pi.value=Math.max(R().minBid,(+pi.value||0)+ +b.dataset.d);check()});check();
   $('won').onclick=()=>{if(!check())return;const v=+pi.value;if((v>hm||!slot)&&!$('won').dataset.ok){$('won').dataset.ok=1;$('won').textContent='Tap again to confirm';return}result(p,'ours',v)};
   $('lost').onclick=()=>{if(!check())return;const t=$('buyer').value;if(!t){$('perr').textContent='Pick which team bought, so rival budgets stay correct.';return}result(p,'sold',+pi.value,t)};$('unsold').onclick=()=>result(p,'unsold',0)}
-function result(p,st,pr,team){S.log.push({id:p.id,prev:p.status,prevPrice:p.price,prevTeam:p.team,now:st,price:pr});if(!p.ret)p.team=st==='sold'?team:undefined;p.status=st;p.price=st==='avail'?0:pr;S.draft=null;render()}
+function result(p,st,pr,team){S.log.push({id:p.id,prev:p.status,prevPrice:p.price,prevTeam:p.team,now:st,price:pr,t:Date.now(),buyer:st==='sold'?team:(st==='ours'?S.ourTeam:'')});if(!p.ret)p.team=st==='sold'?team:undefined;p.status=st;p.price=st==='avail'?0:pr;S.draft=null;render()}
 function renderTable(){const q=$('q').value.toLowerCase(),fc=$('fc').value,fs=$('fs').value;
   const st={avail:'Available',ours:'Ours',sold:'Sold',retained:'Retained',unsold:'Unsold'};
   const rows=S.pool.filter(p=>(!q||p.name.toLowerCase().includes(q))&&(!fc||(fc==='W'?p.w:p.cat===fc))&&
     (!fs||(fs==='avail'?p.status==='avail':fs==='ranked'?p.rank:fs==='sold'?(p.status==='sold'||p.status==='ours'):true)))
     .sort((a,b)=>CATS.indexOf(a.cat)-CATS.indexOf(b.cat)||(a.rank||99)-(b.rank||99)||a.name.localeCompare(b.name));
-  $('tb').innerHTML=rows.map(p=>`<tr class="click ${p.status==='ours'?'ours':p.status!=='avail'?'gone':''}" data-id="${p.id}"><td>${esc(p.name)}${p.w?' ♀':''}</td><td>${CN[p.cat]}</td>
+  $('tb').innerHTML=rows.map(p=>`<tr class="click ${p.status==='ours'?'ours':p.status!=='avail'?'gone':''}" data-id="${p.id}"><td>${esc(p.name)}${p.w?' ♀':''}${p.note?`<div class="note">📝 ${esc(p.note)}</div>`:''}</td><td>${CN[p.cat]}</td>
    <td><input class="rank" data-r="${p.id}" type="number" min="1" value="${p.rank}"></td><td>${p.status==='avail'?fmt(cap(p)):''}</td><td>${st[p.status]}${p.price?' · '+fmt(p.price):''}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">No players match.</td></tr>'}
 function renderSetup(){$('ourTeam').innerHTML='<option value="">— not in the list —</option>'+TEAMS.map(t=>`<option ${S.ourTeam===t[0]?'selected':''}>${esc(t[0])}</option>`).join('');const rets=S.pool.filter(p=>p.ret);
   ['ret1','ret2'].forEach((id,i)=>{$(id).innerHTML=`<option value="">${i?'Retained player 2 (any other category)':'Retained player 1 (Advanced)'}</option>`+rets.map(p=>`<option value="${p.id}" ${S.ret[i]==p.id?'selected':''}>${esc(p.name)} · ${CN[p.cat]}</option>`).join('')});
@@ -520,7 +581,7 @@ function rulesText(){const r=R();return `Padel Hub Super League auction. ${r.tea
 let sample=null;
 (async()=>{try{sample=await claude.use('sample')}catch(e){}if(!sample){$('aiBtn').disabled=true;$('ai').textContent='Ask Claude works when this page is opened on claude.ai. Everything else works here.'}})();
 $('aiBtn').onclick=async()=>{if(!sample)return;const q=$('aiQ').value.trim()||'What should our strategy be for the next few players?';const blk=S.pool.find(x=>x.id===S.sel);
-  const avail=CATS.map(c=>`${CN[c]}: `+S.pool.filter(p=>p.cat===c&&p.status==='avail').map(p=>p.name+(p.w?' (woman)':'')+(p.rank?` [our rank ${p.rank}]`:'')).join(', ')).join('\n');
+  const avail=CATS.map(c=>`${CN[c]}: `+S.pool.filter(p=>p.cat===c&&p.status==='avail').map(p=>p.name+(p.w?' (woman)':'')+(p.rank?` [our rank ${p.rank}]`:'')+(p.note?` {note: ${p.note}}`:'')).join(', ')).join('\n');
   const prices=S.pool.filter(p=>p.status==='sold'&&p.price).map(p=>`${p.name} (${CN[p.cat]}) ${p.price}`).join('; ')||'none yet';
   const prompt=`You are advising one team owner live during a padel league player auction. Reply in short, plain English (max 8 lines), concrete numbers in coins. Never suggest anything that breaks the rules.\n\nRULES:\n${rulesText()}\n\nOUR STATE: coins left ${left()}, places still open ${JSON.stringify(needLeft())}, women ${womenOurs()}/${R().women}, highest bid we can afford ${hardMax()}.\nOur squad: ${ours().map(p=>`${p.name} (${CN[p.cat]}) ${p.price}`).join('; ')||'empty'}\nWhat other teams paid: ${prices}\nRival teams (coins left / highest bid they can make): ${rivals().map(r=>`${r.t} ${r.left}/${r.max}`).join('; ')}\nWe are ${S.ourTeam||'one of the teams'}.\nOn the block: ${blk?`${blk.name} (${CN[blk.cat]}${blk.w?', woman':''}), our tool suggests up to ${cap(blk)}`:'nobody'}\nStill available (ranks are our own preference, 1 = best; no other skill ratings exist):\n${avail}\n\nQUESTION: ${q}`;
   $('ai').textContent='Thinking…';$('aiBtn').disabled=true;
