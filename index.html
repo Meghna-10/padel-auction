@@ -75,6 +75,7 @@ tr.click{cursor:pointer}tr.click:hover td{background:#f8f9f7}tr.gone td{color:#a
   <div>
     <div class="card"><h3>Our squad</h3><div class="slots" id="slots"></div><div class="list" id="squad"></div></div>
     <div class="card"><h3>Watch out</h3><div id="alerts"></div></div>
+    <div class="card"><h3>Rival teams</h3><div id="rivals"></div><p class="note" style="margin-top:8px">Updates when you pick the buying team under "Other team bought". Max = coins left minus 1,000 for each other player they still need.</p></div>
     <div class="card"><h3>Recent results</h3><div id="log"></div><div class="row" style="margin-top:10px"><button class="btn sm" id="undo">↶ Undo last</button></div></div>
   </div>
 </div></div>
@@ -92,6 +93,10 @@ tr.click{cursor:pointer}tr.click:hover td{background:#f8f9f7}tr.gone td{color:#a
 
 <!-- SETUP -->
 <div class="view" id="v-setup">
+  <div class="card"><h3>Our team</h3>
+    <select id="ourTeam" style="width:100%"></select>
+    <p class="note">Picks our 2 retained players automatically (from PHSL Teams &amp; Retained Players). Each team's Marquee is its retained Advanced player.</p>
+  </div>
   <div class="card"><h3>Our retained players</h3>
     <div class="row"><select id="ret1" style="flex:1"></select><select id="ret2" style="flex:1"></select></div>
     <div class="err" id="retErr"></div>
@@ -317,6 +322,12 @@ Sr No Name Category
 21 Gabri Intermediate Plus
 22 Rayika Intermediate
 6`;
+/* PHSL_Teams & Retained Players.pdf: each team's Marquee is its retained Advanced player */
+const TEAMS=[['Goodwill Gladiators','Naesar Jewoor','Rahul Gupta'],['RB Titans','Omar Sumar','Tanish Singh'],['Tovio Smashio','Siddharth Nandal','Kush Shah'],
+ ['Anvaya Lobstars','Vinayak S','Namita Bal'],['SBA Samarth Firebolts','Atharva Khisti','Omkar J'],['Barquillo Smashers','Aryan Sutar','Arya Devdhar'],
+ ['Goldfieldd Strikers','Kaivalya kalamse','Rohan C'],['Serve Society All Stars','Saish shelar','Arjun Gupta'],['Khelomore Tigers','Akash Wagh','Niraj Sankla'],
+ ['Skeiron Strikers','Aryan Goveas','Cherag Ramnathan']];
+const DEFAULT_TEAM='Tovio Smashio';
 const SEED_RANK={'Manav Peshwani':1,'Zian Talab':2,'Tushal Thawani':3,'Venkatesh Acharya':4,'Yash Paranjpe':5,'Tanish Belgalkar':6};
 const KNOWN_WOMEN=['Namita Bal'];
 
@@ -342,13 +353,21 @@ function makePool(list,oldRanks){return list.map((x,id)=>({id,name:x.name,cat:x.
 
 /* ---------- rules (Padel Hub Super League rulebook, Nov) ---------- */
 const DEFAULT_RULES={budget:100000,teams:10,minBid:1000,step:100,A:2,IP:2,I:4,B:4,SUB:2,women:1};
-const RULE_LABELS={budget:'Coins per team',teams:'Number of teams',minBid:'Starting bid',step:'Bid step',A:'Marquee + Advanced',IP:'Intermediate Plus',I:'Intermediate',B:'Beginner',SUB:'Substitutes (any)',women:'Women needed (min)'};
+const RULE_LABELS={budget:'Coins per team',teams:'Number of teams',minBid:'Starting bid',step:'Bid step',A:'Marquee (retained) + Advanced',IP:'Intermediate Plus',I:'Intermediate',B:'Beginner',SUB:'Substitutes (any)',women:'Women needed (min)'};
 // how much each slot matters: Advanced plays the 2-point match and is scarce
 const W={A:3.2,IP:1.5,I:1.0,B:0.75,SUB:0.5};
 const RANK_MULT=r=>!r?0.85:Math.max(0.8,1.6-0.12*(r-1));
 
-let S;const KEY='padel-auction-v3';
-function fresh(){return{rules:{...DEFAULT_RULES},pool:makePool(parseList(DEFAULT_TEXT)),ret:['',''],log:[],sel:null,tab:'live'}}
+let S;const KEY='padel-auction-v4';
+function tagTeams(pool){for(const[t,...ns]of TEAMS)for(const n of ns){const p=pool.find(x=>x.ret&&x.name.toLowerCase()===n.toLowerCase());if(p)p.team=t}}
+function setOurTeam(st,t){st.ourTeam=t;st.pool.forEach(p=>{if(p.ret){p.status='retained';p.price=0}});
+  const mine=st.pool.filter(p=>p.ret&&t&&p.team===t).sort((a,b)=>(b.cat==='A')-(a.cat==='A'));
+  st.ret=[mine[0]?String(mine[0].id):'',mine[1]?String(mine[1].id):''];mine.forEach(p=>p.status='ours')}
+function fresh(){const st={rules:{...DEFAULT_RULES},pool:makePool(parseList(DEFAULT_TEXT)),ret:['',''],log:[],sel:null,tab:'live',ourTeam:''};tagTeams(st.pool);setOurTeam(st,DEFAULT_TEAM);return st}
+/* rival teams: everyone except us; their players = retained + buys recorded with "Other team bought" */
+function rivals(){return TEAMS.map(t=>t[0]).filter(t=>t!==S.ourTeam).map(t=>{const ps=S.pool.filter(p=>p.team===t&&(p.status==='retained'||p.status==='sold'));
+  const spentT=ps.reduce((a,p)=>a+(p.status==='sold'?p.price||0:0),0),need=Math.max(0,Object.values(NEED()).reduce((a,b)=>a+b,0)-ps.length),l=R().budget-spentT;
+  return{t,left:l,have:ps.length,need,max:need?Math.max(0,l-R().minBid*(need-1)):0}})}
 function load(){try{const j=localStorage.getItem(KEY);if(j){const s=JSON.parse(j);if(s.rules&&s.pool)return s}}catch(e){}return fresh()}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 S=load();
@@ -394,7 +413,7 @@ function render(){save();
   $('kMax').textContent=fmt(hardMax());$('kAvg').textContent=slotsLeft()?fmt(left()/slotsLeft()):'–';
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.v===S.tab));
   document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+S.tab));
-  renderSetup();renderSquad();renderAlerts();renderBlock();renderTable();renderLog();
+  renderSetup();renderSquad();renderAlerts();renderBlock();renderTable();renderLog();renderRivals();
   $('dl').innerHTML=S.pool.filter(p=>p.status==='avail').map(p=>`<option value="${esc(p.name)}">`).join('')}
 function renderSquad(){const f=squadSlots(),N=NEED();
   $('slots').innerHTML=Object.keys(N).map(k=>`<div class="slot ${f[k].length>=N[k]?'done':''}"><span>${SLOTNAME[k]}</span><b>${f[k].length} / ${N[k]}</b></div>`).join('')+
@@ -409,6 +428,8 @@ function renderAlerts(){const a=[];const n=needLeft();
   if(slotsLeft()&&left()/slotsLeft()<=2*R().minBid)a.push('Coins are tight. From here, mostly buy at the starting bid.');
   if(S.ret.filter(x=>x!=='').length<2)a.push('Pick your 2 retained players in Rules &amp; setup first.');
   $('alerts').innerHTML=a.map(x=>`<div class="alert">${x}</div>`).join('')||'<div class="alert ok">All good.</div>'}
+function renderRivals(){const rv=rivals().sort((a,b)=>b.max-a.max);
+  $('rivals').innerHTML=rv.map(r=>`<div class="li"><span>${esc(r.t)} <span class="m">· ${r.have} players</span></span><span><span class="m">${fmt(r.left)} left · max </span><b>${fmt(r.max)}</b></span></div>`).join('')}
 function renderLog(){const L=S.log.slice(-6).reverse();
   $('log').innerHTML=L.length?L.map(l=>{const p=S.pool[l.id];const what={ours:'Won by us',sold:'Sold to another team',unsold:'Unsold',avail:'Put back'}[l.now]||l.now;
     return `<div class="li"><span>${esc(p.name)} <span class="m">· ${what}</span></span><b>${l.price?fmt(l.price):''}</b></div>`}).join(''):'<div class="note">Nothing yet.</div>'}
@@ -420,12 +441,14 @@ function renderBlock(){const p=S.pool.find(x=>x.id===S.sel);const el=$('block');
   else if(!slot){v="Don't bid";cls='stop';why=(p.cat==='B'&&!p.w&&!womanDone())?'Our remaining Beginner place must go to a woman (rule).':'Our squad is full.'}
   else if(slot==='SUB'&&!p.rank){v=`Up to ${fmt(Math.min(c,2*R().minBid))}`;cls='warn';why=`Our ${CN[p.cat]} places are full, so only as a cheap substitute.`}
   else{v=`Up to ${fmt(c)}`;cls='go';why=`Goes into our ${SLOTNAME[slot]} place. `+(slotsLeft()>1?` We can never go above ${fmt(hm)}, because ${fmt(R().minBid)} has to stay for each of the other ${slotsLeft()-1} players we still need.`:' This is the last place in our squad.')}
+  if(p.status==='avail'&&slot&&cls==='go'){const top=rivals().filter(r=>r.max>c).length;why+=` ${top} rival team${top===1?' has':'s have'} enough coins to go higher.`}
   el.innerHTML=`<div class="pname">${esc(p.name)}</div><div class="chips"><span class="chip">${CN[p.cat]}</span>${p.w?'<span class="chip w">Woman</span>':''}${p.rank?`<span class="chip rk">My rank ${p.rank}</span>`:''}</div>
    <div class="verdict ${cls}"><div class="l">${cls==='go'||cls==='warn'?'Bid':''}</div><div class="v">${v}</div>${why?`<div class="why">${why}</div>`:''}</div>
    ${p.status==='avail'?`<div class="note" style="margin-bottom:6px">Final price</div>
    <div class="price"><button class="btn sm" data-d="-${R().step*10}">−${fmt(R().step*10)}</button><button class="btn sm" data-d="-${R().step}">−${R().step}</button>
    <input id="price" type="number" inputmode="numeric" step="${R().step}" min="${R().minBid}" value="${S.draft||R().minBid}">
    <button class="btn sm" data-d="${R().step}">+${R().step}</button><button class="btn sm" data-d="${R().step*10}">+${fmt(R().step*10)}</button></div>
+   <div class="row" style="margin-top:8px"><span class="note">Bought by (if another team)</span><select id="buyer" style="flex:1"><option value="">— pick team —</option>${TEAMS.map(t=>t[0]).filter(t=>t!==S.ourTeam).map(t=>`<option>${esc(t)}</option>`).join('')}</select></div>
    <div class="err" id="perr"></div>
    <div class="acts"><button class="btn pri" id="won">✓ We bought</button><button class="btn" id="lost">Other team bought</button><button class="btn" id="unsold">Unsold</button></div>`
    :`<button class="btn sm" id="back" style="margin-top:4px">Put back as available</button>`}`;
@@ -438,8 +461,8 @@ function renderBlock(){const p=S.pool.find(x=>x.id===S.sel);const el=$('block');
     S.draft=v;return!e};
   pi.oninput=check;el.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{pi.value=Math.max(R().minBid,(+pi.value||0)+ +b.dataset.d);check()});check();
   $('won').onclick=()=>{if(!check())return;const v=+pi.value;if((v>hm||!slot)&&!$('won').dataset.ok){$('won').dataset.ok=1;$('won').textContent='Tap again to confirm';return}result(p,'ours',v)};
-  $('lost').onclick=()=>{if(check())result(p,'sold',+pi.value)};$('unsold').onclick=()=>result(p,'unsold',0)}
-function result(p,st,pr){S.log.push({id:p.id,prev:p.status,prevPrice:p.price,now:st,price:pr});p.status=st;p.price=st==='avail'?0:pr;S.draft=null;render()}
+  $('lost').onclick=()=>{if(!check())return;const t=$('buyer').value;if(!t){$('perr').textContent='Pick which team bought, so rival budgets stay correct.';return}result(p,'sold',+pi.value,t)};$('unsold').onclick=()=>result(p,'unsold',0)}
+function result(p,st,pr,team){S.log.push({id:p.id,prev:p.status,prevPrice:p.price,prevTeam:p.team,now:st,price:pr});if(!p.ret)p.team=st==='sold'?team:undefined;p.status=st;p.price=st==='avail'?0:pr;S.draft=null;render()}
 function renderTable(){const q=$('q').value.toLowerCase(),fc=$('fc').value,fs=$('fs').value;
   const st={avail:'Available',ours:'Ours',sold:'Sold',retained:'Retained',unsold:'Unsold'};
   const rows=S.pool.filter(p=>(!q||p.name.toLowerCase().includes(q))&&(!fc||(fc==='W'?p.w:p.cat===fc))&&
@@ -447,7 +470,7 @@ function renderTable(){const q=$('q').value.toLowerCase(),fc=$('fc').value,fs=$(
     .sort((a,b)=>CATS.indexOf(a.cat)-CATS.indexOf(b.cat)||(a.rank||99)-(b.rank||99)||a.name.localeCompare(b.name));
   $('tb').innerHTML=rows.map(p=>`<tr class="click ${p.status==='ours'?'ours':p.status!=='avail'?'gone':''}" data-id="${p.id}"><td>${esc(p.name)}${p.w?' ♀':''}</td><td>${CN[p.cat]}</td>
    <td><input class="rank" data-r="${p.id}" type="number" min="1" value="${p.rank}"></td><td>${p.status==='avail'?fmt(cap(p)):''}</td><td>${st[p.status]}${p.price?' · '+fmt(p.price):''}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">No players match.</td></tr>'}
-function renderSetup(){const rets=S.pool.filter(p=>p.ret);
+function renderSetup(){$('ourTeam').innerHTML='<option value="">— not in the list —</option>'+TEAMS.map(t=>`<option ${S.ourTeam===t[0]?'selected':''}>${esc(t[0])}</option>`).join('');const rets=S.pool.filter(p=>p.ret);
   ['ret1','ret2'].forEach((id,i)=>{$(id).innerHTML=`<option value="">${i?'Retained player 2 (any other category)':'Retained player 1 (Advanced)'}</option>`+rets.map(p=>`<option value="${p.id}" ${S.ret[i]==p.id?'selected':''}>${esc(p.name)} · ${CN[p.cat]}</option>`).join('')});
   const sel=S.ret.filter(x=>x!=='').map(i=>S.pool[+i]);let e='';
   if(sel.length===2){const a=sel.filter(p=>p.cat==='A').length;if(a!==1)e='Rule check: retained players must be exactly 1 Advanced + 1 from another category.';if(sel[0].id===sel[1].id)e='Pick two different players.'}
@@ -466,10 +489,11 @@ const pickName=v=>{const p=S.pool.find(x=>x.name.toLowerCase()===v.toLowerCase()
 $('blockSearch').onchange=e=>pickName(e.target.value);
 $('blockSearch').onkeydown=e=>{if(e.key==='Enter'){const v=e.target.value.toLowerCase().trim();if(!pickName(v)){const m=S.pool.filter(p=>p.status==='avail'&&p.name.toLowerCase().includes(v));if(m.length===1)pickName(m[0].name)}}};
 $('rulesForm').oninput=e=>{const k=e.target.dataset.rule;if(!k)return;const v=parseInt(e.target.value);if(v>=0){S.rules[k]=v;render()}};
+$('ourTeam').onchange=e=>{setOurTeam(S,e.target.value);render()};
 ['ret1','ret2'].forEach((id,i)=>$(id).onchange=e=>{const old=S.ret[i];if(old!==''){const o=S.pool[+old];o.status='retained';o.price=0}
   const v=e.target.value;if(v!==''&&S.ret[1-i]===v){S.ret[i]='';render();return}
   S.ret[i]=v;if(v!==''){const p=S.pool[+v];p.status='ours';p.price=0}render()});
-$('undo').onclick=()=>{const l=S.log.pop();if(l){const p=S.pool[l.id];p.status=l.prev;p.price=l.prevPrice;render()}};
+$('undo').onclick=()=>{const l=S.log.pop();if(l){const p=S.pool[l.id];p.status=l.prev;p.price=l.prevPrice;p.team=l.prevTeam;render()}};
 $('exp').onclick=async()=>{$('io').value=JSON.stringify(S);try{await navigator.clipboard.writeText($('io').value);$('exp').textContent='Copied ✓'}catch(e){$('exp').textContent='Select the text below and copy'}};
 $('imp').onclick=()=>{try{const s=JSON.parse($('io').value);if(!s.rules||!s.pool)throw 0;S=s;render()}catch(e){$('io').value='That is not a valid backup.'}};
 $('reset').onclick=()=>{const b=$('reset');if(b.dataset.ok){S=fresh();render();b.dataset.ok='';b.textContent='Start over'}else{b.dataset.ok=1;b.textContent='Tap again: wipes everything'}};
@@ -479,7 +503,7 @@ function showPreview(list,src){preview=list;const c={};list.forEach(p=>c[p.cat]=
   $('parseInfo').textContent=list.length?`${src}: found ${list.length} players – ${CATS.map(k=>`${c[k]||0} ${CN[k]}`).join(', ')}, ${list.filter(p=>p.w).length} women, ${list.filter(p=>p.ret).length} retained.`:`${src}: no players found. Each line needs a name followed by its category.`;
   $('useBtn').disabled=!list.length}
 $('parseBtn').onclick=()=>showPreview(parseList($('paste').value),'Pasted list');
-$('useBtn').onclick=()=>{if(!preview)return;const old={};S.pool.forEach(p=>{if(p.rank)old[p.name]=p.rank});S.pool=makePool(preview,old);S.ret=['',''];S.log=[];S.sel=null;preview=null;$('useBtn').disabled=true;$('parseInfo').textContent='New list in use.';render()};
+$('useBtn').onclick=()=>{if(!preview)return;const old={};S.pool.forEach(p=>{if(p.rank)old[p.name]=p.rank});S.pool=makePool(preview,old);tagTeams(S.pool);setOurTeam(S,S.ourTeam);S.log=[];S.sel=null;preview=null;$('useBtn').disabled=true;$('parseInfo').textContent='New list in use.';render()};
 $('pdf').onchange=async e=>{const f=e.target.files[0];if(!f)return;$('parseInfo').textContent='Reading PDF…';
   try{if(!window.pdfjsLib)await new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';s.onload=ok;s.onerror=no;document.head.appendChild(s)});
     pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -498,7 +522,7 @@ let sample=null;
 $('aiBtn').onclick=async()=>{if(!sample)return;const q=$('aiQ').value.trim()||'What should our strategy be for the next few players?';const blk=S.pool.find(x=>x.id===S.sel);
   const avail=CATS.map(c=>`${CN[c]}: `+S.pool.filter(p=>p.cat===c&&p.status==='avail').map(p=>p.name+(p.w?' (woman)':'')+(p.rank?` [our rank ${p.rank}]`:'')).join(', ')).join('\n');
   const prices=S.pool.filter(p=>p.status==='sold'&&p.price).map(p=>`${p.name} (${CN[p.cat]}) ${p.price}`).join('; ')||'none yet';
-  const prompt=`You are advising one team owner live during a padel league player auction. Reply in short, plain English (max 8 lines), concrete numbers in coins. Never suggest anything that breaks the rules.\n\nRULES:\n${rulesText()}\n\nOUR STATE: coins left ${left()}, places still open ${JSON.stringify(needLeft())}, women ${womenOurs()}/${R().women}, highest bid we can afford ${hardMax()}.\nOur squad: ${ours().map(p=>`${p.name} (${CN[p.cat]}) ${p.price}`).join('; ')||'empty'}\nWhat other teams paid: ${prices}\nOn the block: ${blk?`${blk.name} (${CN[blk.cat]}${blk.w?', woman':''}), our tool suggests up to ${cap(blk)}`:'nobody'}\nStill available (ranks are our own preference, 1 = best; no other skill ratings exist):\n${avail}\n\nQUESTION: ${q}`;
+  const prompt=`You are advising one team owner live during a padel league player auction. Reply in short, plain English (max 8 lines), concrete numbers in coins. Never suggest anything that breaks the rules.\n\nRULES:\n${rulesText()}\n\nOUR STATE: coins left ${left()}, places still open ${JSON.stringify(needLeft())}, women ${womenOurs()}/${R().women}, highest bid we can afford ${hardMax()}.\nOur squad: ${ours().map(p=>`${p.name} (${CN[p.cat]}) ${p.price}`).join('; ')||'empty'}\nWhat other teams paid: ${prices}\nRival teams (coins left / highest bid they can make): ${rivals().map(r=>`${r.t} ${r.left}/${r.max}`).join('; ')}\nWe are ${S.ourTeam||'one of the teams'}.\nOn the block: ${blk?`${blk.name} (${CN[blk.cat]}${blk.w?', woman':''}), our tool suggests up to ${cap(blk)}`:'nobody'}\nStill available (ranks are our own preference, 1 = best; no other skill ratings exist):\n${avail}\n\nQUESTION: ${q}`;
   $('ai').textContent='Thinking…';$('aiBtn').disabled=true;
   try{await sample(prompt,{onText:({text})=>{$('ai').textContent=text},cache:false})}
   catch(e){$('ai').textContent=e.code==='rate_limited'?'Too many questions – wait a minute.':e.code==='not_granted'?'Claude access was not allowed for this page.':'Could not reach Claude ('+(e.message||e.code)+').'}
